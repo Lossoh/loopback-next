@@ -283,6 +283,9 @@ export class Binding<T = BoundValue> {
     );
   }
 
+  /**
+   * Lock the binding so that it cannot be rebound
+   */
   lock(): this {
     this.isLocked = true;
     return this;
@@ -548,6 +551,9 @@ export class Binding<T = BoundValue> {
     return this;
   }
 
+  /**
+   * Convert to a plain JSON object
+   */
   toJSON(): Object {
     // tslint:disable-next-line:no-any
     const json: {[name: string]: any} = {

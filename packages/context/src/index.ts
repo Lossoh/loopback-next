@@ -9,6 +9,7 @@ export * from './binding-decorator';
 export * from './binding-inspector';
 export * from './binding-key';
 export * from './binding-filter';
+export * from './binding-config';
 export * from './context';
 export * from './context-observer';
 export * from './context-view';

@@ -53,7 +53,7 @@ export interface InjectionMetadata {
    */
   decorator?: string;
   /**
-   * Control if the dependency is optional, default to false
+   * Control if the dependency is optional. Default value: `false`.
    */
   optional?: boolean;
   /**
@@ -334,6 +334,50 @@ export namespace inject {
   export const context = function injectContext() {
     return inject('', {decorator: '@inject.context'}, ctx => ctx);
   };
+
+  /**
+   * Inject a property from `config` of the current binding. If no corresponding
+   * config value is present, `undefined` will be injected.
+   *
+   * @example
+   * ```ts
+   * class Store {
+   *   constructor(
+   *     @inject.config('x') public optionX: number,
+   *     @inject.config('y') public optionY: string,
+   *   ) { }
+   * }
+   *
+   * ctx.configure('store1', { x: 1, y: 'a' });
+   * ctx.configure('store2', { x: 2, y: 'b' });
+   *
+   * ctx.bind('store1').toClass(Store);
+   * ctx.bind('store2').toClass(Store);
+   *
+   *  const store1 = ctx.getSync('store1');
+   *  expect(store1.optionX).to.eql(1);
+   *  expect(store1.optionY).to.eql('a');
+
+   * const store2 = ctx.getSync('store2');
+   * expect(store2.optionX).to.eql(2);
+   * expect(store2.optionY).to.eql('b');
+   * ```
+   *
+   * @param configPath Optional property path of the config. If is `''` or not
+   * present, the `config` object will be returned.
+   * @param metadata Optional metadata to help the injection
+   */
+  export const config = function injectConfig(
+    configPath?: string,
+    metadata?: InjectionMetadata,
+  ) {
+    configPath = configPath || '';
+    metadata = Object.assign(
+      {configPath, decorator: '@inject.config', optional: true},
+      metadata,
+    );
+    return inject('', metadata, resolveFromConfig);
+  };
 }
 
 function resolveAsGetter(
@@ -392,6 +436,25 @@ function resolveAsSetter(ctx: Context, injection: Injection) {
     }
     return binding;
   };
+}
+
+function resolveFromConfig(
+  ctx: Context,
+  injection: Injection,
+  session?: ResolutionSession,
+) {
+  if (!(session && session.currentBinding)) {
+    // No binding is available
+    return undefined;
+  }
+
+  const meta = injection.metadata || {};
+  const binding = session.currentBinding;
+
+  return ctx.getConfigAsValueOrPromise(binding.key, meta.configPath, {
+    session,
+    optional: meta.optional,
+  });
 }
 
 /**
