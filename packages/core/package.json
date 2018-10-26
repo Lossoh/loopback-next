@@ -20,12 +20,14 @@
   "copyright.owner": "IBM Corp.",
   "license": "MIT",
   "dependencies": {
-    "@loopback/context": "^1.8.1"
+    "@loopback/context": "^1.8.1",
+    "debug": "^4.1.0"
   },
   "devDependencies": {
     "@loopback/build": "^1.4.0",
     "@loopback/testlab": "^1.2.1",
     "@loopback/tslint-config": "^2.0.3",
+    "@types/debug": "^4.1.2",
     "@types/node": "^10.11.2"
   },
   "files": [
