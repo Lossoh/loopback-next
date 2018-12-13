@@ -225,58 +225,10 @@ During application.boot(), such artifacts are discovered, loaded, and bound to
 the application context as life cycle observers. This is achieved by a built-in
 `LifeCycleObserverBooter` extension.
 
-## CLI command
+## CLI command to generate life cycle observers
 
 To make it easy for application developers to add custom life cycle observers,
 we introduce `lb4 observer` command as part the CLI.
 
-To add a life cycle observer:
-
-1. cd <my-loopback4-project>
-2. lb4 observer
-
-```
-? Observer name: Hello
-   create src/observers/my.hello-observer.ts
-   update src/observers/index.ts
-
-Observer Hello was created in src/observers/
-```
-
-The generated class looks like:
-
-```ts
-import {bind} from '@loopback/context';
-import {
-  /* inject, Application, */
-  CoreBindings,
-  LifeCycleObserver,
-} from '@loopback/core';
-
-/**
- * This class will be bound to the application as a `LifeCycleObserver` during
- * `boot`
- */
-@bind({tags: {[CoreBindings.LIFE_CYCLE_OBSERVER_GROUP]: ''}})
-export class HelloObserver implements LifeCycleObserver {
-  /*
-  constructor(
-    @inject(CoreBindings.APPLICATION_INSTANCE) private app: Application,
-  ) {}
-  */
-
-  /**
-   * This method will be invoked when the application starts
-   */
-  async start(): Promise<void> {
-    // Add your logic for start
-  }
-
-  /**
-   * This method will be invoked when the application stops
-   */
-  async stop(): Promise<void> {
-    // Add your logic for start
-  }
-}
-```
+See [Life cycle observer generator](Life-cycle-observer-generator.md) for more
+details.

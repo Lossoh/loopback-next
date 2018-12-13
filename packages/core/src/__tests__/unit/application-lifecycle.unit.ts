@@ -7,7 +7,6 @@ import {BindingScope, Constructor, Context} from '@loopback/context';
 import {expect} from '@loopback/testlab';
 import {
   Application,
-  asLifeCycleObserverBinding,
   Component,
   CoreBindings,
   CoreTags,

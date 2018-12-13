@@ -3,20 +3,18 @@
 // This file is licensed under the MIT License.
 // License text available at https://opensource.org/licenses/MIT
 
-import {Constructor, inject, createBindingFromClass} from '@loopback/context';
+import {Constructor, inject} from '@loopback/context';
 import {
   Application,
-  asLifeCycleObserverBinding,
   CoreBindings,
   isLifeCycleObserverClass,
   LifeCycleObserver,
-  CoreTags,
 } from '@loopback/core';
+import * as debugFactory from 'debug';
 import {ArtifactOptions} from '../interfaces';
 import {BootBindings} from '../keys';
 import {BaseArtifactBooter} from './base-artifact.booter';
 
-import * as debugFactory from 'debug';
 const debug = debugFactory('loopback:boot:lifecycle-observer-booter');
 
 type LifeCycleObserverClass = Constructor<LifeCycleObserver>;
