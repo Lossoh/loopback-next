@@ -378,6 +378,18 @@ export namespace inject {
     );
     return inject('', metadata, resolveFromConfig);
   };
+
+  export const configGetter = function injectConfigGetter(
+    configPath?: string,
+    metadata?: InjectionMetadata,
+  ) {
+    configPath = configPath || '';
+    metadata = Object.assign(
+      {configPath, decorator: '@inject.configGetter', optional: true},
+      metadata,
+    );
+    return inject('', metadata, resolveAsGetterFromConfig);
+  };
 }
 
 function resolveAsGetter(
@@ -442,7 +454,7 @@ function resolveFromConfig(
   ctx: Context,
   injection: Injection,
   session?: ResolutionSession,
-) {
+): ValueOrPromise<unknown> {
   if (!(session && session.currentBinding)) {
     // No binding is available
     return undefined;
@@ -455,6 +467,27 @@ function resolveFromConfig(
     session,
     optional: meta.optional,
   });
+}
+
+function resolveAsGetterFromConfig(
+  ctx: Context,
+  injection: Injection,
+  session?: ResolutionSession,
+) {
+  if (!(session && session.currentBinding)) {
+    // No binding is available
+    return undefined;
+  }
+  const meta = injection.metadata || {};
+  const bindingKey = session.currentBinding.key;
+  // We need to clone the session for the getter as it will be resolved later
+  session = ResolutionSession.fork(session);
+  return async function getter() {
+    return ctx.getConfigAsValueOrPromise(bindingKey, meta.configPath, {
+      session,
+      optional: meta.optional,
+    });
+  };
 }
 
 /**

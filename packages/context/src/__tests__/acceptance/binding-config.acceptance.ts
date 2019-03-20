@@ -32,7 +32,7 @@ describe('Context bindings - injecting configuration for bound artifacts', () =>
     expect(server1.config).to.eql({port: 3000});
   });
 
-  it('configure an artifact with a dynamic source', async () => {
+  it('configures an artifact with a dynamic source', async () => {
     const ctx = new Context();
 
     // Bind configuration
@@ -47,5 +47,36 @@ describe('Context bindings - injecting configuration for bound artifacts', () =>
     // Expect server1.config to be `{port: 3000}
     const server1 = await ctx.get<RestServer>('servers.rest.server1');
     expect(server1.config).to.eql({port: 3000});
+  });
+
+  it('injects a getter function to access config', async () => {
+    interface LoggerConfig {
+      level: 'DEBUG' | 'INFO' | 'WARNING' | 'ERROR';
+    }
+
+    class Logger {
+      constructor(
+        @inject.configGetter()
+        public configGetter: () => Promise<LoggerConfig | undefined>,
+      ) {}
+    }
+
+    const ctx = new Context();
+
+    // Bind logger configuration
+    ctx.configure('loggers.Logger').to({level: 'INFO'});
+
+    // Bind Logger
+    ctx.bind('loggers.Logger').toClass(Logger);
+
+    const logger = await ctx.get<Logger>('loggers.Logger');
+    let config = await logger.configGetter();
+    expect(config).to.eql({level: 'INFO'});
+
+    // Update logger configuration
+    ctx.configure('loggers.Logger').to({level: 'DEBUG'});
+
+    config = await logger.configGetter();
+    expect(config).to.eql({level: 'DEBUG'});
   });
 });
