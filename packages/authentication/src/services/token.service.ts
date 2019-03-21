@@ -1,1 +1,6 @@
-// TBD in story https://github.com/strongloop/loopback-next/issues/2435
+import {UserProfile} from '../types';
+
+export interface TokenService {
+  verifyToken(token: string): Promise<UserProfile>;
+  generateToken(userProfile: UserProfile): Promise<string>;
+}

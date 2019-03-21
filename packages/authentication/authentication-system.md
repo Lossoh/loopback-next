@@ -1,14 +1,17 @@
 ## Multiple Authentication strategies
 
-An authentication system in a LoopBack 4 application could potentially support multiple popular strategies, including basic auth, oauth2, saml, openid-connect, etc...And also allow programmers to use either a token based or a session based approach to track the logged-in user.
+An authentication system in a LoopBack 4 application could potentially support
+multiple popular strategies, including basic auth, oauth2, saml, openid-connect,
+etc...And also allow programmers to use either a token based or a session based
+approach to track the logged-in user.
 
-[comment]: # (Can people do a combination of token based and session based auth?)
-
-The diagram below illustrates the high level abstraction of such an extensible authentication system.
+The diagram below illustrates the high level abstraction of such an extensible
+authentication system.
 
 <img src="./docs/imgs/multiple-auth-strategies-login.png" width="1000px" />
 
-Assume the app has a static login page with a list of available choices for users to login:
+Assume the app has a static login page with a list of available choices for
+users to login:
 
 - local: basic auth with email/username + password
 - facebook account: oauth2
@@ -19,86 +22,115 @@ Assume the app has a static login page with a list of available choices for user
 
 For the local login, we retrieve the user from a local database.
 
-For the third-party service login, e.g. facebook account login, we retrieve the user info from facebook authorization server using oauth2, then find or create the user in the local database.
+For the third-party service login, e.g. facebook account login, we retrieve the
+user info from the facebook authorization server using oauth2, then find or
+create the user in the local database.
 
-By clicking any one of the links, you login with a particular account and your status will be tracked in a session(with session-based auth), or your profile will be encoded into a JWT token(with token-based auth).
+By clicking any one of the links, you login with a particular account and your
+status will be tracked in a session(with session-based auth), or your profile
+will be encoded into a JWT token(with token-based auth).
 
-A common login flow for all strategies would be: the authentication action verifies the credentials and returns the raw information of that logged-in user.
+A common flow for all the login strategies would be: the authentication action
+verifies the credentials and returns the raw information of that logged-in user.
 
-Here the raw information refers to the data returned from a third-party service or a persistent database. Therefore you need another step to convert it to a user profile instance which describes your application's user model. Finally the user profile is either tracked by a generated token or a session + cookie.
+Here the raw information refers to the data returned from a third-party service
+or a persistent database. Therefore you need another step to convert it to a
+user profile instance which describes your application's user model. Finally the
+user profile is either tracked by a generated token OR a session + cookie.
 
-The next diagram illustrates the flow of verifying the client requests sent after the user has logged in.
+The next diagram illustrates the flow of verifying the client requests sent
+after the user has logged in.
 
 <img src="./docs/imgs/multiple-auth-strategies-verify.png" width="1000px" />
 
-The request goes through the authentication action which decodes/deserializes the user profile from token/session, binds it to the request context so that actions after 'authenticate' could inject it using DI.
+The request goes through the authentication action which invokes the
+authentication strategy to decode/deserialize the user profile from the
+token/session, binds it to the request context so that actions after
+'authenticate' could inject it using DI.
 
-Next let's walk through the typical API flow of user login and user verification.
+Next let's walk through the typical API flow of user login and user
+verification.
 
-## API Flows (using JWT as example)
+## API Flows (using BasicAuth + JWT as example)
 
-Other than the LoopBack core and its authentication module, there are different services included and integrated together to perform the authentication.
+Other than the LoopBack core and its authentication module, there are different
+parts included and integrated together to perform the authentication.
 
-The next diagram, using the JWT authentication strategy as an example, draws two API flows: 
+The next diagram, using the BasicAuth + JWT authentication strategy as an
+example, draws two API flows:
 
 - Login: user login with email+password
 - Verify: verify the logged-in user
 
-along with the responsibilities divided among different services:
+along with the responsibilities divided among different parts:
 
-- LoopBack core: resolve a strategy based on the endpoint's corresponding authentication metadata, invoke the authentication action provided as strategy functions.
+- LoopBack core: resolve a strategy based on the endpoint's corresponding
+  authentication metadata, execute the authentication action which invokes the
+  strategy's `authenticate` method.
 
-- Authentication strategy provider: 
-  - (login flow) verify user credentials and return a token that tracks the user.
+- Authentication strategy:
+
+  - (login flow) verify user credentials and return a user profile(it's up to
+    the programmer to create the JWT access token inside the controller
+    function).
   - (verify flow) verify the token and decode user profile from it.
 
-- Authentication services: some utility services that can be injected in the strategy class. (Each service's functionalities will be covered in the next section)
+- Authentication services: some utility services that can be injected in the
+  strategy class. (Each service's functionalities will be covered in the next
+  section)
+
+_Note: FixIt! the step 6 in the following diagram should be moved to LoopBack
+side_
 
 <img src="./docs/imgs/API-flow-(JWT).png" width="1000px" />
 
+_Note: Another section for session based auth TBD_
+
 ## Authentication framework architecture
 
-The following diagram describes the architecture of the entire authentication framework and the detailed responsibility of each part.
+The following diagram describes the architecture of the entire authentication
+framework and the detailed responsibility of each part.
 
 You can check the pseudo code in folder `docs` for:
 
 - [authentication-action](./docs/authentication-action.md)
 - [authentication-strategy](./docs/authentication-strategy.md)
 - [endpoints defined in controller](./docs/controller-functions.md)
+- [basic auth strategy](./docs/basic-auth.md)
 - [jwt strategy](./docs/strategies/jwt.md)
 - [oauth2 strategy](./docs/strategies/oauth2.md)
 
 And the abstractions for:
 
-- [login service](./src/services/login.service.ts)
-- [transport/client service](./src/services/client.service.ts)
+- [user service](./src/services/user.service.ts)
+- [token service](./src/services/token.service.ts)
 
 <img src="./docs/imgs/auth-framework-architecture.png" width="1000px" />
-
 
 ### Token based authentication
 
 - Login flow
+
   - authentication action:
     - resolve metadata to get the strategy
-    - invoke strategy.login()
+    - invoke strategy.authenticate()
+    - set the current user as the return of strategy.authenticate()
   - strategy:
-    - extract credentials from 
-      - transport layer (call credential transport service)
-      - or local configuration file (call credential transport service)
-    - verify credentials (call login service) and get the user profile
-    - generate token (call token service)
-    - return token
+    - extract credentials from
+      - transport layer(request)
+      - or local configuration file
+    - verify credentials and return the user profile (call user service)
   - controller function:
-    - TBD: How to serialize the token into response? Do we want to do it in controller?
+    - generate token (call token service)
+    - return token or serialize it into the response
 
 - Verify flow
   - authentication action:
     - resolve metadata to get the strategy
-    - invoke strategy.verify()
-    - set the current user as the return of strategy.verify()
+    - invoke strategy.authenticate()
+    - set the current user as the return of strategy.authenticate()
   - strategy:
-    - extract access token from transport layer(call token transport service)
+    - extract access token from transport layer(request)
     - verify access token(call token service)
     - decode user from access token(call token service)
     - return user
@@ -108,21 +140,23 @@ And the abstractions for:
 ### Session based authentication
 
 - Login flow
+
   - authentication action:
     - resolve metadata to get the strategy
-    - invoke strategy.login()
+    - invoke strategy.authenticate()
   - strategy:
-    - extract credentials from 
+    - extract credentials from
       - transport layer (call credential transport service)
       - or local configuration file (call credential transport service)
-    - verify credentials (call login service) and get the user profile
-    - serialize user info into session(call session service)
+    - verify credentials (call user service) and return the user profile
+  - controller:
+    - serialize user info into the session
 
 - Verify flow
   - authentication action:
     - resolve metadata to get the strategy
-    - invoke strategy.verify()
-    - set the current user as the return of strategy.verify()
+    - invoke strategy.authenticate()
+    - set the current user as the return of strategy.authenticate()
   - strategy:
     - extract session info from cookie(call session service)
     - deserialize user info from session(call session service)

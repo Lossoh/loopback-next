@@ -1,47 +1,30 @@
-### JWT Strategy
+You could find the `AuthenticationStrategy` interface in file
+[authentication-strategy.md](./docs/authentication-strategy.md)
 
 ```ts
+import {Request} from '@loopback/rest';
 
-type Credentials = {
-  email: string;
-  password: string;
-}
-
-class JWTStrategy {
+class JWTAuthenticationStrategy implements AuthenticationStrategy {
+  options: object;
   constructor(
-    @inject(AuthenticationBindings.SERVICES.LOGIN) loginService: LoginService,
-    @inject(AuthenticationBindings.SERVICES.TOKEN) tokenService: TokenService
-    @inject(AuthenticationBindings.SERVICES.TRANSPORT) transportService: TransportService
-    // Need confirm is it the correct way to get response object
-    @inject(RestBindings.Http.RESPONSE) response: Response,
-  )
+    @inject(AUTHENTICATION_BINDINGS.SERVICES.USER) tokenService: TokenService,
+    @inject(AUTHENTICATION_BINDINGS.BASIC.OPTIONS) options?: object,
+  ) {}
 
-  login(request, response): Promise<UserProfile | undefined> {
-    // Should be an extension point for different extractors
-    const credentials: Credentials = await transportService.extractCredentials(request);
-    // if `user` is undefined, it means the verification fails
-    const user = await loginService.verifyCredentials(credentials);
+  authenticate(request: Request): Promise<UserProfile | undefined> {
+    // extract the username and password from request
+    const token = await this.extractCredentials(request);
+    // `verifyToken` should decode the payload from the token and convert the token payload to
+    // userProfile object.
+    return await tokenService.verifyToken(token);
+  }
 
-    if (user) {
-      const userProfile = await loginService.convertToUserProfile(user);
-      let token;
-      token = await tokenService.generateAccessToken(userProfile);
-      // Should be an extension point for different serializers
-      await tokenTransportService.serializeAccessToken(token, response);
-      return userProfile;
-    } else {
-      throw new HttpError[401]('User not found.');
-    }
-  };
+  setOptions(newOptions: object) {
+    Object.assign(options, newOptions);
+  }
 
-  // 1. Try to find current user
-  // 2. If found, return it
-  // 3. If not found, throw 401:
-  verify(request) {
-    // Should be an extension point for different deserializers
-    const token = await tokenTransportService.extractAccessToken(request);
-    const userProfile = await tokenService.verifyAccessToken(token);
-    return userProfile;
+  extractCredentials(request): Promise<string> {
+    // code to extract json web token from request header/cookie/query
   }
 }
 ```

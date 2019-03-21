@@ -1,36 +1,26 @@
 ### Auth action
 
 ```ts
+import * as HttpErrors from 'http-errors';
+
 async action(request: Request): Promise<UserProfile | undefined> {
-    const strategy = await this.getStrategy();
-    if (!strategy) {
+    const authStrategy = await this.getAuthStrategy();
+    if (!authStrategy) {
       // The invoked operation does not require authentication.
       return undefined;
     }
 
-    // read the action metadata from endpoint's auth metadata like 
-    // `@authenticate('strategy_name', {action: 'login'})`
-    // type ActionType = 'login' | 'verify'
-    const action = await this.getAction();
-    if (!action) {
-      throw new Error('no action specified for your endpoint')
-    }
-    if (!strategy[action]) {
-      throw new Error('invalid strategy parameter');
-    }
-
-    let user: UserProfile;
     try {
-      switch(action) {
-        case 'login': user = strategy.login(request);
-        case 'verify': user = strategy.verify(request);
-        default: return;
+      const userProfile: UserProfile = await authStrategy.authenticate(request);
+      this.setCurrentUser(userProfile);
+      // a convenient return for the next request handlers
+      return userProfile;
+    } catch (err) {
+      // interpret the raw error code/msg here and throw the corresponding HTTP error
+      // convert it to http error
+      if (err.code == '401') {
+        throw new HttpErrors.Unauthorized(err.message);
       }
-    } catch(err) {
-      if (err) throw err;
     }
-
-    this.setCurrentUser(user);
-    return user;
   }
 ```
