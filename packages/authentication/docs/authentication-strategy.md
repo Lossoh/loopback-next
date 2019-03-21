@@ -1,4 +1,4 @@
-### Auth strategy class
+### Auth strategy interface
 
 ```ts
 import {Request} from '@loopback/rest';

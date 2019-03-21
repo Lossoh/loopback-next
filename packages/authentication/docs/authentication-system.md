@@ -8,7 +8,7 @@ approach to track the logged-in user.
 The diagram below illustrates the high level abstraction of such an extensible
 authentication system.
 
-<img src="./docs/imgs/multiple-auth-strategies-login.png" width="1000px" />
+<img src="./imgs/multiple-auth-strategies-login.png" width="1000px" />
 
 Assume the app has a static login page with a list of available choices for
 users to login:
@@ -41,7 +41,7 @@ user profile is either tracked by a generated token OR a session + cookie.
 The next diagram illustrates the flow of verifying the client requests sent
 after the user has logged in.
 
-<img src="./docs/imgs/multiple-auth-strategies-verify.png" width="1000px" />
+<img src="./imgs/multiple-auth-strategies-verify.png" width="1000px" />
 
 The request goes through the authentication action which invokes the
 authentication strategy to decode/deserialize the user profile from the
@@ -82,7 +82,7 @@ along with the responsibilities divided among different parts:
 _Note: FixIt! the step 6 in the following diagram should be moved to LoopBack
 side_
 
-<img src="./docs/imgs/API-flow-(JWT).png" width="1000px" />
+<img src="./imgs/API-flow-(JWT).png" width="1000px" />
 
 _Note: Another section for session based auth TBD_
 
@@ -93,19 +93,19 @@ framework and the detailed responsibility of each part.
 
 You can check the pseudo code in folder `docs` for:
 
-- [authentication-action](./docs/authentication-action.md)
-- [authentication-strategy](./docs/authentication-strategy.md)
-- [endpoints defined in controller](./docs/controller-functions.md)
-- [basic auth strategy](./docs/basic-auth.md)
-- [jwt strategy](./docs/strategies/jwt.md)
-- [oauth2 strategy](./docs/strategies/oauth2.md)
+- [authentication-action](./authentication-action.md)
+- [authentication-strategy](./authentication-strategy.md)
+- [basic auth strategy](./strategies/basic-auth.md)
+- [jwt strategy](./strategies/jwt.md)
+- [oauth2 strategy](./strategies/oauth2.md)
+- [endpoints defined in controller](./controller-functions.md)
 
 And the abstractions for:
 
-- [user service](./src/services/user.service.ts)
-- [token service](./src/services/token.service.ts)
+- [user service](../src/services/user.service.ts)
+- [token service](../src/services/token.service.ts)
 
-<img src="./docs/imgs/auth-framework-architecture.png" width="1000px" />
+<img src="./imgs/auth-framework-architecture.png" width="1000px" />
 
 ### Token based authentication
 
@@ -146,8 +146,8 @@ And the abstractions for:
     - invoke strategy.authenticate()
   - strategy:
     - extract credentials from
-      - transport layer (call credential transport service)
-      - or local configuration file (call credential transport service)
+      - transport layer (request)
+      - or local configuration file
     - verify credentials (call user service) and return the user profile
   - controller:
     - serialize user info into the session

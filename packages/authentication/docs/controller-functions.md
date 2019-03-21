@@ -2,7 +2,7 @@
 
 The following decorated controller functions demos the endpoints described at
 the beginning of markdown file
-[authentication-system](../authentication-system.md).
+[authentication-system](./authentication-system.md).
 
 Please note how they are decorated with `@authenticate()`, the syntax is:
 `@authenticate(<strategy_name>, {action: <action_name>, session: <enabled_or_not>})`
