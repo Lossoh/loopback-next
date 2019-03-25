@@ -5,9 +5,11 @@
 
 import {anOperationSpec} from '@loopback/openapi-spec-builder';
 import {Client, createRestAppClient, expect} from '@loopback/testlab';
+import * as express from 'express';
+import {Request, Response} from 'express';
 import * as fs from 'fs';
 import * as path from 'path';
-import {RestApplication, RestServer, RestServerConfig, get} from '../..';
+import {get, RestApplication, RestServer, RestServerConfig} from '../..';
 
 const ASSETS = path.resolve(__dirname, '../../../fixtures/assets');
 
@@ -161,6 +163,26 @@ describe('RestApplication (integration)', () => {
     client = createRestAppClient(restApp);
     const response = await client.get('/custom/ping').expect(304);
     await client.get(response.header.location).expect(200, 'Hi');
+  });
+
+  it.only('mounts an express Router on top of a LoopBack application', async () => {
+    givenApplication();
+
+    const router = express.Router();
+
+    router.get('/poodle', function(req: Request, res: Response) {
+      res.send('Poodle!');
+    });
+    router.get('/pug', function(req: Request, res: Response) {
+      res.send('Pug!');
+    });
+    restApp.mountExpressRouter('/dogs', router);
+
+    await restApp.start();
+    client = createRestAppClient(restApp);
+
+    const response = await client.get('/dogs/pug').expect(200);
+    console.log(response);
   });
 
   function givenApplication(options?: {rest: RestServerConfig}) {

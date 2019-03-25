@@ -38,11 +38,13 @@ import {
   ControllerInstance,
   ControllerRoute,
   createControllerFactoryForBinding,
+  ExpressRequestHandler,
   ExternalExpressRoutes,
   RedirectRoute,
   RestRouterOptions,
   Route,
   RouteEntry,
+  RouterSpec,
   RoutingTable,
 } from './router';
 import {DefaultSequence, SequenceFunction, SequenceHandler} from './sequence';
@@ -810,6 +812,24 @@ export class RestServer extends Context implements Server, HttpServerLike {
     process.nextTick(() => {
       throw err;
     });
+  }
+
+  /**
+   * Mount an Express router to expose additional REST endpoints handled
+   * via legacy Express-based stack.
+   *
+   * @param basePath Path where to mount the router at, e.g. `/` or `/api`.
+   * @param router The Express router to handle the requests.
+   * @param spec A partial OpenAPI spec describing endpoints provided by the router.
+   * LoopBack will prepend `basePath` to all endpoints automatically. Use `undefined`
+   * if you don't want to document the routes.
+   */
+  mountExpressRouter(
+    basePath: string,
+    router: ExpressRequestHandler,
+    spec?: RouterSpec,
+  ): void {
+    this._externalRoutes.mountRouter(basePath, router, spec);
   }
 }
 

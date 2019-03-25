@@ -4,7 +4,11 @@
 // License text available at https://opensource.org/licenses/MIT
 
 import {Context} from '@loopback/context';
-import {OperationObject, SchemasObject} from '@loopback/openapi-v3-types';
+import {
+  OpenApiSpec,
+  OperationObject,
+  SchemasObject,
+} from '@loopback/openapi-v3-types';
 import * as express from 'express';
 import {RequestHandler} from 'express';
 import {PathParams} from 'express-serve-static-core';
@@ -21,6 +25,7 @@ import {
   Response,
 } from '../types';
 import {ResolvedRoute, RouteEntry} from './route-entry';
+import {assignRouterSpec, RouterSpec} from './router-spec';
 
 export type ExpressRequestHandler = express.RequestHandler;
 
@@ -32,6 +37,9 @@ export type ExpressRequestHandler = express.RequestHandler;
  * @private
  */
 export class ExternalExpressRoutes {
+  protected _externalRoutes: express.Router = express.Router();
+  protected _specForExternalRoutes: RouterSpec = {paths: {}};
+
   protected _staticRoutes: express.Router = express.Router();
 
   public registerAssets(
@@ -40,6 +48,17 @@ export class ExternalExpressRoutes {
     options?: ServeStaticOptions,
   ) {
     this._staticRoutes.use(path, express.static(rootDir, options));
+  }
+
+  public mountRouter(
+    basePath: string,
+    router: ExpressRequestHandler,
+    spec: RouterSpec = {paths: {}},
+  ) {
+    this._externalRoutes.use(basePath, router);
+
+    spec = rebaseOpenApiSpec(spec, basePath);
+    assignRouterSpec(this._specForExternalRoutes, spec);
   }
 
   find(request: Request): ResolvedRoute {
@@ -88,6 +107,24 @@ class ExternalRoute implements RouteEntry, ResolvedRoute {
     // TODO(bajtos) provide better description for Express routes with spec
     return `External Express route "${this.verb} ${this.path}"`;
   }
+}
+
+export function rebaseOpenApiSpec<T extends Partial<OpenApiSpec>>(
+  spec: T,
+  basePath: string,
+): T {
+  if (!spec.paths) return spec;
+  if (!basePath || basePath === '/') return spec;
+
+  const localPaths = spec.paths;
+  // Don't modify the spec object provided to us.
+  spec = Object.assign({}, spec);
+  spec.paths = {};
+  for (const url in localPaths) {
+    spec.paths[`${basePath}${url}`] = localPaths[url];
+  }
+
+  return spec;
 }
 
 const onFinishedAsync = promisify(onFinished);
