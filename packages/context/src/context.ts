@@ -6,11 +6,9 @@
 import * as debugModule from 'debug';
 import {EventEmitter} from 'events';
 import {v1 as uuidv1} from 'uuid';
-import {ValueOrPromise} from '.';
 import {Binding, BindingTag} from './binding';
 import {BindingFilter, filterByKey, filterByTag} from './binding-filter';
 import {BindingAddress, BindingKey} from './binding-key';
-import {ContextView} from './context-view';
 import {
   ContextEventObserver,
   ContextEventType,
@@ -18,8 +16,19 @@ import {
   Notification,
   Subscription,
 } from './context-observer';
-import {ResolutionOptions, ResolutionSession} from './resolution-session';
-import {BoundValue, getDeepProperty, isPromiseLike} from './value-promise';
+import {ContextView} from './context-view';
+import {
+  asResolutionOptions,
+  ResolutionOptions,
+  ResolutionOptionsOrSession,
+  ResolutionSession,
+} from './resolution-session';
+import {
+  BoundValue,
+  getDeepProperty,
+  isPromiseLike,
+  ValueOrPromise,
+} from './value-promise';
 
 /**
  * Polyfill Symbol.asyncIterator as required by TypeScript for Node 8.x.
@@ -766,22 +775,16 @@ export class Context extends EventEmitter {
    */
   getValueOrPromise<ValueType>(
     keyWithPath: BindingAddress<ValueType>,
-    optionsOrSession?: ResolutionOptions | ResolutionSession,
+    optionsOrSession?: ResolutionOptionsOrSession,
   ): ValueOrPromise<ValueType | undefined> {
     const {key, propertyPath} = BindingKey.parseKeyWithPath(keyWithPath);
 
-    // backwards compatibility
-    if (optionsOrSession instanceof ResolutionSession) {
-      optionsOrSession = {session: optionsOrSession};
-    }
+    optionsOrSession = asResolutionOptions(optionsOrSession);
 
     const binding = this.getBinding<ValueType>(key, optionsOrSession);
     if (binding == null) return undefined;
 
-    const boundValue = binding.getValue(
-      this,
-      optionsOrSession && optionsOrSession.session,
-    );
+    const boundValue = binding.getValue(this, optionsOrSession);
     if (propertyPath === undefined || propertyPath === '') {
       return boundValue;
     }

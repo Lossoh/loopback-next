@@ -214,6 +214,45 @@ describe('Binding', () => {
     });
   });
 
+  describe('cache', () => {
+    it('clears cache if scope changes', () => {
+      let index = 0;
+      const indexBinding = ctx
+        .bind<number>('index')
+        .toDynamicValue(() => {
+          return index++;
+        })
+        .inScope(BindingScope.SINGLETON);
+      expect(ctx.getSync(indexBinding.key)).to.equal(0);
+      // Singleton
+      expect(ctx.getSync(indexBinding.key)).to.equal(0);
+      indexBinding.inScope(BindingScope.CONTEXT);
+      expect(ctx.getSync(indexBinding.key)).to.equal(1);
+    });
+
+    it('clears cache if _getValue changes', () => {
+      let index = 0;
+      class IndexProvider implements Provider<number> {
+        value() {
+          return index++;
+        }
+      }
+      const indexBinding = ctx
+        .bind<number>('index')
+        .toDynamicValue(() => {
+          return index++;
+        })
+        .inScope(BindingScope.SINGLETON);
+      expect(ctx.getSync(indexBinding.key)).to.equal(0);
+      // Singleton
+      expect(ctx.getSync(indexBinding.key)).to.equal(0);
+      indexBinding.toProvider(IndexProvider);
+      expect(ctx.getSync(indexBinding.key)).to.equal(1);
+      // Singleton
+      expect(ctx.getSync(indexBinding.key)).to.equal(1);
+    });
+  });
+
   describe('toJSON()', () => {
     it('converts a keyed binding to plain JSON object', () => {
       const json = binding.toJSON();

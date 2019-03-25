@@ -7,7 +7,11 @@ import * as debugModule from 'debug';
 import {BindingAddress, BindingKey} from './binding-key';
 import {Context} from './context';
 import {Provider} from './provider';
-import {ResolutionSession} from './resolution-session';
+import {
+  asResolutionOptions,
+  ResolutionOptionsOrSession,
+  ResolutionSession,
+} from './resolution-session';
 import {instantiateClass} from './resolver';
 import {
   BoundValue,
@@ -162,9 +166,9 @@ export class Binding<T = BoundValue> {
 
   private _cache: WeakMap<Context, T>;
   private _getValue: (
-    ctx?: Context,
-    session?: ResolutionSession,
-  ) => ValueOrPromise<T>;
+    ctx: Context,
+    optionsOrSession?: ResolutionOptionsOrSession,
+  ) => ValueOrPromise<T | undefined>;
 
   private _valueConstructor?: Constructor<T>;
   /**
@@ -205,6 +209,15 @@ export class Binding<T = BoundValue> {
   }
 
   /**
+   * Clear the cache
+   */
+  private _clearCache() {
+    if (!this._cache) return;
+    // WeakMap does not have a `clear` method
+    this._cache = new WeakMap();
+  }
+
+  /**
    * This is an internal function optimized for performance.
    * Users should use `@inject(key)` or `ctx.get(key)` instead.
    *
@@ -228,7 +241,10 @@ export class Binding<T = BoundValue> {
    * @param ctx Context for the resolution
    * @param session Optional session for binding and dependency resolution
    */
-  getValue(ctx: Context, session?: ResolutionSession): ValueOrPromise<T> {
+  getValue(
+    ctx: Context,
+    optionsOrSession?: ResolutionOptionsOrSession,
+  ): ValueOrPromise<T> {
     /* istanbul ignore if */
     if (debug.enabled) {
       debug('Get value for binding %s', this.key);
@@ -246,11 +262,15 @@ export class Binding<T = BoundValue> {
         }
       }
     }
+    optionsOrSession = asResolutionOptions(optionsOrSession);
     if (this._getValue) {
       let result = ResolutionSession.runWithBinding(
-        s => this._getValue(ctx, s),
+        s => {
+          const options = Object.assign({}, optionsOrSession, {session: s});
+          return this._getValue(ctx, options);
+        },
         this,
-        session,
+        optionsOrSession.session,
       );
       return this._cacheValue(ctx, result);
     }
@@ -317,6 +337,7 @@ export class Binding<T = BoundValue> {
    * @param scope Binding scope
    */
   inScope(scope: BindingScope): this {
+    if (this._scope !== scope) this._clearCache();
     this._scope = scope;
     return this;
   }
@@ -328,9 +349,24 @@ export class Binding<T = BoundValue> {
    */
   applyDefaultScope(scope: BindingScope): this {
     if (!this._scope) {
-      this._scope = scope;
+      this.inScope(scope);
     }
     return this;
+  }
+
+  /**
+   * Set the `_getValue` function
+   * @param getValueFn getValue function
+   */
+  private _setGetValue(
+    getValueFn: (
+      ctx: Context,
+      optionsOrSession?: ResolutionOptionsOrSession,
+    ) => ValueOrPromise<T | undefined>,
+  ) {
+    // Clear the cache
+    this._clearCache();
+    this._getValue = getValueFn;
   }
 
   /**
@@ -372,7 +408,7 @@ export class Binding<T = BoundValue> {
       debug('Bind %s to constant:', this.key, value);
     }
     this._type = BindingType.CONSTANT;
-    this._getValue = () => value;
+    this._setGetValue(() => value);
     return this;
   }
 
@@ -400,7 +436,7 @@ export class Binding<T = BoundValue> {
       debug('Bind %s to dynamic value:', this.key, factoryFn);
     }
     this._type = BindingType.DYNAMIC_VALUE;
-    this._getValue = ctx => factoryFn();
+    this._setGetValue(ctx => factoryFn());
     return this;
   }
 
@@ -426,14 +462,14 @@ export class Binding<T = BoundValue> {
       debug('Bind %s to provider %s', this.key, providerClass.name);
     }
     this._type = BindingType.PROVIDER;
-    this._getValue = (ctx, session) => {
+    this._setGetValue((ctx, optionsOrSession) => {
       const providerOrPromise = instantiateClass<Provider<T>>(
         providerClass,
-        ctx!,
-        session,
+        ctx,
+        asResolutionOptions(optionsOrSession).session,
       );
       return transformValueOrPromise(providerOrPromise, p => p.value());
-    };
+    });
     return this;
   }
 
@@ -450,11 +486,20 @@ export class Binding<T = BoundValue> {
       debug('Bind %s to class %s', this.key, ctor.name);
     }
     this._type = BindingType.CLASS;
-    this._getValue = (ctx, session) => instantiateClass(ctor, ctx!, session);
+    this._setGetValue((ctx, optionsOrSession) =>
+      instantiateClass(
+        ctor,
+        ctx,
+        asResolutionOptions(optionsOrSession).session,
+      ),
+    );
     this._valueConstructor = ctor;
     return this;
   }
 
+  /**
+   * Unlock the binding
+   */
   unlock(): this {
     this.isLocked = false;
     return this;
