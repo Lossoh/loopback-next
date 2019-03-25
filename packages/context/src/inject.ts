@@ -12,7 +12,7 @@ import {
   ParameterDecoratorFactory,
   PropertyDecoratorFactory,
 } from '@loopback/metadata';
-import {BindingTag} from './binding';
+import {Binding, BindingTag, BindingTemplate} from './binding';
 import {
   BindingFilter,
   BindingSelector,
@@ -188,7 +188,9 @@ export function inject(
 /**
  * The function injected by `@inject.getter(bindingSelector)`.
  */
-export type Getter<T> = () => Promise<T>;
+export interface Getter<T> {
+  (): Promise<T>;
+}
 
 export namespace Getter {
   /**
@@ -201,9 +203,28 @@ export namespace Getter {
 }
 
 /**
- * The function injected by `@inject.setter(key)`.
+ * The function injected by `@inject.setter(bindingKey)`.
  */
-export type Setter<T> = (value: T) => void;
+export interface Setter<T> {
+  /**
+   * Set the binding with one or more `BindingTemplate` functions or values.
+   * The usages are:
+   *
+   * ```ts
+   * setterFn('my-value');
+   * setterFn(binding => binding.toClass(MyClass).tag('my-tag'));
+   * setterFn().toClass(MyClass);
+   * ```
+   * @param templateFnsOrValues Binding template functions or values. Please
+   * note a parameter with function as the value will be treated as a template
+   * function. To set a function as constant value, you need to wrap it inside
+   * a template function, such as:
+   * ```ts
+   * setterFn(binding => binding.to(aFunction))
+   * ```
+   */
+  (...templateFnsOrValues: (T | BindingTemplate<T>)[]): Binding<T>;
+}
 
 export namespace inject {
   /**
@@ -358,8 +379,18 @@ function resolveAsSetter(ctx: Context, injection: Injection) {
     );
   }
   // No resolution session should be propagated into the setter
-  return function setter(value: unknown) {
-    ctx.bind(bindingSelector).to(value);
+  return function setter(
+    ...templateFnsOrValues: (BindingTemplate | unknown)[]
+  ) {
+    const binding: Binding<unknown> = ctx.findOrCreateBinding(bindingSelector);
+    for (const templateFnOrValue of templateFnsOrValues) {
+      if (typeof templateFnOrValue === 'function') {
+        binding.apply(templateFnOrValue as BindingTemplate);
+      } else {
+        binding.to(templateFnOrValue);
+      }
+    }
+    return binding;
   };
 }
 

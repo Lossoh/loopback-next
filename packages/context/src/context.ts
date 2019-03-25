@@ -38,7 +38,11 @@ if (!Symbol.asyncIterator) {
   // tslint:disable-next-line:no-any
   (Symbol as any).asyncIterator = Symbol.for('Symbol.asyncIterator');
 }
-// This import must happen after the polyfill
+/**
+ * This import must happen after the polyfill.
+ *
+ * WARNING: VSCode organize import may change the order of this import
+ */
 import {iterator, multiple} from 'p-event';
 
 const debug = debugModule('loopback:context');
@@ -744,6 +748,20 @@ export class Context extends EventEmitter {
     throw new Error(
       `The key '${key}' is not bound to any value in context ${this.name}`,
     );
+  }
+
+  /**
+   * Find or create a binding for the given key
+   * @param key Binding address
+   */
+  findOrCreateBinding(key: BindingAddress) {
+    let binding: Binding<unknown>;
+    if (this.isBound(key)) {
+      binding = this.getBinding(key);
+    } else {
+      binding = this.bind(key);
+    }
+    return binding;
   }
 
   /**

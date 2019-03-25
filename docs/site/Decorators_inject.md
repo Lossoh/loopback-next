@@ -143,6 +143,29 @@ export class HelloController {
 }
 ```
 
+The `setter` function injected has the following signature:
+
+```ts
+/**
+ * Set the binding with one or more `BindingTemplate` functions or values
+ * @param templateFnsOrValues
+ */
+(...templateFnsOrValues: (T | BindingTemplate<T>)[]): Binding<T>;
+```
+
+It takes either a const value or `BindingTemplate` functions to create (if not
+existent) or update the binding. For example:
+
+```ts
+const binding = this.greetingSetter('Greetings!');
+```
+
+or
+
+```ts
+const binding = this.greetingSetter(b => b.toDynamicValue(() => 'Greetings!'));
+```
+
 ### @inject.tag
 
 `@inject.tag` injects an array of values by a pattern or regexp to match binding

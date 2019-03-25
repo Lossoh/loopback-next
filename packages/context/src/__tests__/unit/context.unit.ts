@@ -342,6 +342,26 @@ describe('Context', () => {
     });
   });
 
+  describe('findOrCreateBinding', () => {
+    it('returns the binding object registered under the given key', () => {
+      const expected = ctx.bind('foo');
+      const actual: Binding = ctx.findOrCreateBinding('foo');
+      expect(actual).to.be.exactly(expected);
+    });
+
+    it('creates a new binding if not found', () => {
+      const binding = ctx.findOrCreateBinding('a-new-key');
+      expect(binding.key).to.eql('a-new-key');
+    });
+
+    it('rejects a key containing property separator', () => {
+      const key = 'a' + BindingKey.PROPERTY_SEPARATOR + 'b';
+      expect(() => ctx.findOrCreateBinding(key)).to.throw(
+        /Binding key .* cannot contain/,
+      );
+    });
+  });
+
   describe('getSync', () => {
     it('returns the value immediately when the binding is sync', () => {
       ctx.bind('foo').to('bar');

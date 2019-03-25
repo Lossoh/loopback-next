@@ -506,8 +506,8 @@ export class Binding<T = BoundValue> {
   }
 
   /**
-   * Apply a template function to set up the binding with scope, tags, and
-   * other attributes as a group.
+   * Apply one or more template functions to set up the binding with scope,
+   * tags, and other attributes as a group.
    *
    * For example,
    * ```ts
@@ -517,10 +517,12 @@ export class Binding<T = BoundValue> {
    * const serverBinding = new Binding<RestServer>('servers.RestServer1');
    * serverBinding.apply(serverTemplate);
    * ```
-   * @param templateFn A function to configure the binding
+   * @param templateFns One or more functions to configure the binding
    */
-  apply(templateFn: BindingTemplate<T>): this {
-    templateFn(this);
+  apply(...templateFns: BindingTemplate<T>[]): this {
+    for (const fn of templateFns) {
+      fn(this);
+    }
     return this;
   }
 

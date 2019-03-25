@@ -169,6 +169,25 @@ describe('Context bindings - Injecting dependencies of classes', () => {
     expect(await store.getter()).to.equal('456');
   });
 
+  it('creates getter from a value', () => {
+    const getter = Getter.fromValue('data');
+    expect(getter).to.be.a.Function();
+    return expect(getter()).to.be.fulfilledWith('data');
+  });
+
+  it('reports an error if @inject.getter has a non-function target', async () => {
+    ctx.bind('key').to('value');
+
+    class Store {
+      constructor(@inject.getter('key') public getter: string) {}
+    }
+
+    ctx.bind(STORE_KEY).toClass(Store);
+    expect(() => ctx.getSync<Store>(STORE_KEY)).to.throw(
+      'The type of Store.constructor[0] (String) is not a Getter function',
+    );
+  });
+
   describe('in SINGLETON scope', () => {
     it('throws if a getter cannot be resolved by the owning context', async () => {
       class Store {
@@ -330,23 +349,37 @@ describe('Context bindings - Injecting dependencies of classes', () => {
     expect(ctx.getSync(HASH_KEY)).to.equal('a-value');
   });
 
-  it('creates getter from a value', () => {
-    const getter = Getter.fromValue('data');
-    expect(getter).to.be.a.Function();
-    return expect(getter()).to.be.fulfilledWith('data');
-  });
-
-  it('reports an error if @inject.getter has a non-function target', async () => {
-    ctx.bind('key').to('value');
-
+  it('injects a setter function with applyTemplates', async () => {
     class Store {
-      constructor(@inject.getter('key') public getter: string) {}
+      constructor(@inject.setter(HASH_KEY) public setter: Setter<string>) {}
     }
 
     ctx.bind(STORE_KEY).toClass(Store);
-    expect(() => ctx.getSync<Store>(STORE_KEY)).to.throw(
-      'The type of Store.constructor[0] (String) is not a Getter function',
-    );
+    const store = ctx.getSync<Store>(STORE_KEY);
+
+    expect(store.setter).to.be.Function();
+    store.setter(b => b.to('a-value').tag('a-tag'));
+    expect(ctx.getSync(HASH_KEY)).to.equal('a-value');
+    expect(ctx.getBinding(HASH_KEY).tagNames).to.containEql('a-tag');
+  });
+
+  it('injects a setter function that uses an existing binding', async () => {
+    class Store {
+      constructor(@inject.setter(HASH_KEY) public setter: Setter<string>) {}
+    }
+
+    // Create a binding for hash key
+    ctx
+      .bind(HASH_KEY)
+      .to('123')
+      .tag('hash');
+    ctx.bind(STORE_KEY).toClass(Store);
+    const store = ctx.getSync<Store>(STORE_KEY);
+    // Change the hash value
+    store.setter('a-value');
+    expect(ctx.getSync(HASH_KEY)).to.equal('a-value');
+    // The tag is kept
+    expect(ctx.getBinding(HASH_KEY).tagNames).to.containEql('hash');
   });
 
   it('reports an error if @inject.setter has a non-function target', async () => {
