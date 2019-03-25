@@ -7,16 +7,17 @@ import {expect} from '@loopback/testlab';
 import {
   BindingKey,
   BindingScope,
+  config,
   Constructor,
   Context,
   Getter,
   inject,
   Injection,
+  instantiateClass,
   invokeMethod,
   Provider,
   ResolutionSession,
   Setter,
-  instantiateClass,
 } from '../..';
 
 const INFO_CONTROLLER = 'controllers.info';
@@ -398,14 +399,14 @@ describe('Context bindings - Injecting dependencies of classes', () => {
 
   it('injects a nested property', async () => {
     class TestComponent {
-      constructor(@inject('config#test') public config: string) {}
+      constructor(@inject('config#test') public configVal: string) {}
     }
 
     ctx.bind('config').to({test: 'test-config'});
     ctx.bind('component').toClass(TestComponent);
 
     const resolved = await ctx.get<TestComponent>('component');
-    expect(resolved.config).to.equal('test-config');
+    expect(resolved.configVal).to.equal('test-config');
   });
 
   it('injects context with @inject.context', () => {
@@ -540,8 +541,8 @@ describe('Context bindings - Injecting dependencies of classes', () => {
   it('injects a config property', () => {
     class Store {
       constructor(
-        @inject.config('x') public optionX: number,
-        @inject.config('y') public optionY: string,
+        @config('x') public optionX: number,
+        @config('y') public optionY: string,
       ) {}
     }
 
@@ -554,7 +555,7 @@ describe('Context bindings - Injecting dependencies of classes', () => {
 
   it('injects a config property with promise value', async () => {
     class Store {
-      constructor(@inject.config('x') public optionX: number) {}
+      constructor(@config('x') public optionX: number) {}
     }
 
     ctx.configure('store').toDynamicValue(async () => {
@@ -576,7 +577,7 @@ describe('Context bindings - Injecting dependencies of classes', () => {
     }
 
     class Store {
-      constructor(@inject.config('myOption') public myOption: string) {}
+      constructor(@config('myOption') public myOption: string) {}
     }
 
     ctx.bind('config').toProvider(MyConfigProvider);
@@ -590,7 +591,7 @@ describe('Context bindings - Injecting dependencies of classes', () => {
 
   it('injects a config property with a rejected promise', async () => {
     class Store {
-      constructor(@inject.config('x') public optionX: number) {}
+      constructor(@config('x') public optionX: number) {}
     }
 
     ctx
@@ -604,7 +605,7 @@ describe('Context bindings - Injecting dependencies of classes', () => {
 
   it('injects a config property with nested property', () => {
     class Store {
-      constructor(@inject.config('x.y') public optionXY: string) {}
+      constructor(@config('x.y') public optionXY: string) {}
     }
 
     ctx.configure('store').to({x: {y: 'y'}});
@@ -615,29 +616,29 @@ describe('Context bindings - Injecting dependencies of classes', () => {
 
   it('injects config if the binding key is not present', () => {
     class Store {
-      constructor(@inject.config() public config: object) {}
+      constructor(@config() public configObj: object) {}
     }
 
     ctx.configure('store').to({x: 1, y: 'a'});
     ctx.bind('store').toClass(Store);
     const store: Store = ctx.getSync('store');
-    expect(store.config).to.eql({x: 1, y: 'a'});
+    expect(store.configObj).to.eql({x: 1, y: 'a'});
   });
 
   it("injects config if the binding key is ''", () => {
     class Store {
-      constructor(@inject.config('') public config: object) {}
+      constructor(@config('') public configObj: object) {}
     }
 
     ctx.configure('store').to({x: 1, y: 'a'});
     ctx.bind('store').toClass(Store);
     const store: Store = ctx.getSync('store');
-    expect(store.config).to.eql({x: 1, y: 'a'});
+    expect(store.configObj).to.eql({x: 1, y: 'a'});
   });
 
   it('injects config if the binding key is a path', () => {
     class Store {
-      constructor(@inject.config('x') public optionX: number) {}
+      constructor(@config('x') public optionX: number) {}
     }
 
     ctx.configure('store').to({x: 1, y: 'a'});
@@ -650,7 +651,7 @@ describe('Context bindings - Injecting dependencies of classes', () => {
     class Store {
       constructor(
         // tslint:disable-next-line:no-any
-        @inject.config('not-exist') public option: string | undefined,
+        @config('not-exist') public option: string | undefined,
       ) {}
     }
 
@@ -663,8 +664,8 @@ describe('Context bindings - Injecting dependencies of classes', () => {
   it('injects a config property based on the parent binding', async () => {
     class Store {
       constructor(
-        @inject.config('x') public optionX: number,
-        @inject.config('y') public optionY: string,
+        @config('x') public optionX: number,
+        @config('y') public optionY: string,
       ) {}
     }
 
@@ -687,17 +688,17 @@ describe('Context bindings - Injecting dependencies of classes', () => {
     class Store {
       constructor(
         // tslint:disable-next-line:no-any
-        @inject.config('x') public config: string | undefined,
+        @config('x') public configVal: string | undefined,
       ) {}
     }
 
     const store = await instantiateClass(Store, ctx);
-    expect(store.config).to.be.undefined();
+    expect(store.configVal).to.be.undefined();
   });
 
   it('injects config from config binding', () => {
     class MyStore {
-      constructor(@inject.config('x') public optionX: number) {}
+      constructor(@config('x') public optionX: number) {}
     }
 
     ctx.configure('stores.MyStore').to({x: 1, y: 'a'});

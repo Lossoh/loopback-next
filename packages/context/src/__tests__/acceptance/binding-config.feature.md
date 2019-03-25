@@ -10,7 +10,7 @@
 - Given a `Context`
 - Given a class RestServer with a constructor accepting a single argument
   `config: RestServerConfig`
-- Given `RestServer` ctor argument is decorated with `@inject.config()`
+- Given `RestServer` ctor argument is decorated with `@config()`
 - When I bind a configuration object `{port: 3000}` to
   `servers.rest.server1:$config`
 - And bind the rest server to `servers.rest.server1`
@@ -20,7 +20,7 @@
 
 ```ts
 class RestServer {
-  constructor(@inject.config() public config: RestServerConfig) {}
+  constructor(@config() public config: RestServerConfig) {}
 }
 
 const ctx = new Context();
@@ -41,7 +41,7 @@ const server1 = await ctx.get('servers.rest.server1');
 - Given a `Context`
 - Given a class RestServer with a constructor accepting a single argument
   `config: RestServerConfig`
-- Given `RestServer` ctor argument is decorated with `@inject.config()`
+- Given `RestServer` ctor argument is decorated with `@config()`
 - When I bind a configuration factory of `{port: 3000}` to
   `servers.rest.server1:$config`
 - And bind the rest server to `servers.rest.server1`
@@ -51,7 +51,7 @@ const server1 = await ctx.get('servers.rest.server1');
 
 ```ts
 class RestServer {
-  constructor(@inject.config() public config: RestServerConfig) {}
+  constructor(@config() public config: RestServerConfig) {}
 }
 
 const ctx = new Context();

@@ -334,62 +334,6 @@ export namespace inject {
   export const context = function injectContext() {
     return inject('', {decorator: '@inject.context'}, ctx => ctx);
   };
-
-  /**
-   * Inject a property from `config` of the current binding. If no corresponding
-   * config value is present, `undefined` will be injected.
-   *
-   * @example
-   * ```ts
-   * class Store {
-   *   constructor(
-   *     @inject.config('x') public optionX: number,
-   *     @inject.config('y') public optionY: string,
-   *   ) { }
-   * }
-   *
-   * ctx.configure('store1', { x: 1, y: 'a' });
-   * ctx.configure('store2', { x: 2, y: 'b' });
-   *
-   * ctx.bind('store1').toClass(Store);
-   * ctx.bind('store2').toClass(Store);
-   *
-   *  const store1 = ctx.getSync('store1');
-   *  expect(store1.optionX).to.eql(1);
-   *  expect(store1.optionY).to.eql('a');
-
-   * const store2 = ctx.getSync('store2');
-   * expect(store2.optionX).to.eql(2);
-   * expect(store2.optionY).to.eql('b');
-   * ```
-   *
-   * @param configPath Optional property path of the config. If is `''` or not
-   * present, the `config` object will be returned.
-   * @param metadata Optional metadata to help the injection
-   */
-  export const config = function injectConfig(
-    configPath?: string,
-    metadata?: InjectionMetadata,
-  ) {
-    configPath = configPath || '';
-    metadata = Object.assign(
-      {configPath, decorator: '@inject.config', optional: true},
-      metadata,
-    );
-    return inject('', metadata, resolveFromConfig);
-  };
-
-  export const configGetter = function injectConfigGetter(
-    configPath?: string,
-    metadata?: InjectionMetadata,
-  ) {
-    configPath = configPath || '';
-    metadata = Object.assign(
-      {configPath, decorator: '@inject.configGetter', optional: true},
-      metadata,
-    );
-    return inject('', metadata, resolveAsGetterFromConfig);
-  };
 }
 
 function resolveAsGetter(
@@ -450,46 +394,6 @@ function resolveAsSetter(ctx: Context, injection: Injection) {
   };
 }
 
-function resolveFromConfig(
-  ctx: Context,
-  injection: Injection,
-  session?: ResolutionSession,
-): ValueOrPromise<unknown> {
-  if (!(session && session.currentBinding)) {
-    // No binding is available
-    return undefined;
-  }
-
-  const meta = injection.metadata || {};
-  const binding = session.currentBinding;
-
-  return ctx.getConfigAsValueOrPromise(binding.key, meta.configPath, {
-    session,
-    optional: meta.optional,
-  });
-}
-
-function resolveAsGetterFromConfig(
-  ctx: Context,
-  injection: Injection,
-  session?: ResolutionSession,
-) {
-  if (!(session && session.currentBinding)) {
-    // No binding is available
-    return undefined;
-  }
-  const meta = injection.metadata || {};
-  const bindingKey = session.currentBinding.key;
-  // We need to clone the session for the getter as it will be resolved later
-  session = ResolutionSession.fork(session);
-  return async function getter() {
-    return ctx.getConfigAsValueOrPromise(bindingKey, meta.configPath, {
-      session,
-      optional: meta.optional,
-    });
-  };
-}
-
 /**
  * Return an array of injection objects for parameters
  * @param target The target class for constructor or static methods,
@@ -526,7 +430,7 @@ export function describeInjectedArguments(
  * Inspect the target type
  * @param injection
  */
-function inspectTargetType(injection: Readonly<Injection>) {
+export function inspectTargetType(injection: Readonly<Injection>) {
   let type = MetadataInspector.getDesignTypeForProperty(
     injection.target,
     injection.member!,

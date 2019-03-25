@@ -49,10 +49,7 @@ export class DefaultConfigurationResolver implements ConfigurationResolver {
     resolutionOptions?: ResolutionOptions,
   ): ValueOrPromise<ConfigValueType | undefined> {
     configPath = configPath || '';
-    const configKey = BindingKey.create<ConfigValueType>(
-      BindingKey.buildKeyForConfig(key),
-      configPath,
-    );
+    const configKey = configBindingKeyFor(key, configPath);
 
     const options: ResolutionOptions = Object.assign(
       {optional: true},
@@ -60,4 +57,14 @@ export class DefaultConfigurationResolver implements ConfigurationResolver {
     );
     return this.context.getValueOrPromise<ConfigValueType>(configKey, options);
   }
+}
+
+export function configBindingKeyFor<ConfigValueType = unknown>(
+  key: BindingAddress,
+  configPath?: string,
+) {
+  return BindingKey.create<ConfigValueType>(
+    BindingKey.buildKeyForConfig(key),
+    configPath,
+  );
 }

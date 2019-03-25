@@ -4,7 +4,7 @@
 // License text available at https://opensource.org/licenses/MIT
 
 import {expect} from '@loopback/testlab';
-import {Context, inject} from '../..';
+import {config, Context, ContextView} from '../..';
 
 interface RestServerConfig {
   host?: string;
@@ -12,7 +12,7 @@ interface RestServerConfig {
 }
 
 class RestServer {
-  constructor(@inject.config() public config: RestServerConfig) {}
+  constructor(@config() public configObj: RestServerConfig) {}
 }
 
 describe('Context bindings - injecting configuration for bound artifacts', () => {
@@ -29,7 +29,7 @@ describe('Context bindings - injecting configuration for bound artifacts', () =>
     // Expect server1.config to be `{port: 3000}
     const server1 = await ctx.get<RestServer>('servers.rest.server1');
 
-    expect(server1.config).to.eql({port: 3000});
+    expect(server1.configObj).to.eql({port: 3000});
   });
 
   it('configures an artifact with a dynamic source', async () => {
@@ -46,7 +46,7 @@ describe('Context bindings - injecting configuration for bound artifacts', () =>
     // Resolve an instance of RestServer
     // Expect server1.config to be `{port: 3000}
     const server1 = await ctx.get<RestServer>('servers.rest.server1');
-    expect(server1.config).to.eql({port: 3000});
+    expect(server1.configObj).to.eql({port: 3000});
   });
 
   it('injects a getter function to access config', async () => {
@@ -56,7 +56,7 @@ describe('Context bindings - injecting configuration for bound artifacts', () =>
 
     class Logger {
       constructor(
-        @inject.configGetter()
+        @config.getter()
         public configGetter: () => Promise<LoggerConfig | undefined>,
       ) {}
     }
@@ -70,13 +70,44 @@ describe('Context bindings - injecting configuration for bound artifacts', () =>
     ctx.bind('loggers.Logger').toClass(Logger);
 
     const logger = await ctx.get<Logger>('loggers.Logger');
-    let config = await logger.configGetter();
-    expect(config).to.eql({level: 'INFO'});
+    let configObj = await logger.configGetter();
+    expect(configObj).to.eql({level: 'INFO'});
 
     // Update logger configuration
     ctx.configure('loggers.Logger').to({level: 'DEBUG'});
 
-    config = await logger.configGetter();
-    expect(config).to.eql({level: 'DEBUG'});
+    configObj = await logger.configGetter();
+    expect(configObj).to.eql({level: 'DEBUG'});
+  });
+
+  it('injects a view to access config', async () => {
+    interface LoggerConfig {
+      level: 'DEBUG' | 'INFO' | 'WARNING' | 'ERROR';
+    }
+
+    class Logger {
+      constructor(
+        @config.view()
+        public configView: ContextView<LoggerConfig>,
+      ) {}
+    }
+
+    const ctx = new Context();
+
+    // Bind logger configuration
+    ctx.configure('loggers.Logger').to({level: 'INFO'});
+
+    // Bind Logger
+    ctx.bind('loggers.Logger').toClass(Logger);
+
+    const logger = await ctx.get<Logger>('loggers.Logger');
+    let configObj = await logger.configView.singleValue();
+    expect(configObj).to.eql({level: 'INFO'});
+
+    // Update logger configuration
+    ctx.configure('loggers.Logger').to({level: 'DEBUG'});
+
+    configObj = await logger.configView.singleValue();
+    expect(configObj).to.eql({level: 'DEBUG'});
   });
 });

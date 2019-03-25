@@ -575,15 +575,18 @@ The following APIs are available to enforce/leverage this convention:
 
 1. ctx.configure('servers.RestServer.server1') => Binding for the configuration
 2. ctx.getConfig('servers.RestServer.server1') => Get configuration
-3. `@inject.config` to inject corresponding configuration
+3. `@config` to inject corresponding configuration
+4. `@config.getter` to inject a getter function for corresponding configuration
+5. `@config` to inject a `SingleValuedContextView` for corresponding
+   configuration
 
-Now the RestServer can use `@inject.config`:
+Now the RestServer can use `@config`:
 
 ```ts
 export class RestServer {
   constructor(
     @inject(CoreBindings.APPLICATION_INSTANCE) app: Application,
-    @inject.config()
+    @config()
     config: RestServerConfig = {},
   ) {
     // ...
@@ -606,12 +609,12 @@ appCtx.configure('servers.RestServer.server2').to({protocol: 'http', port: 80});
 ### Allow configuration to be changed dynamically
 
 Some configurations are designed to be changeable dynamically, for example, the
-logging level for an application. To allow that, we introduce
-`@inject.configGetter` to always fetch the latest value of the configuration.
+logging level for an application. To allow that, we introduce `@configGetter` to
+always fetch the latest value of the configuration.
 
 ```ts
 export class Logger {
-  @inject.configGetter()
+  @configGetter()
   private getLevel: Getter<string>;
 
   async log(level: string, message: string) {
