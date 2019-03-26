@@ -4,23 +4,26 @@ You could find the `AuthenticationStrategy` interface in file
 ```ts
 import {Request} from '@loopback/rest';
 
+interface BasicAuthOptions = {
+  // Define it as anyobject in the pseudo code
+  [property: string]: any;
+};
+
 class BasicAuthenticationStrategy implements AuthenticationStrategy {
   options: object;
   constructor(
-    @inject(AUTHENTICATION_BINDINGS.SERVICES.USER) userService: UserService,
-    @inject(AUTHENTICATION_BINDINGS.BASIC.OPTIONS) options?: object,
+    @inject(AUTHENTICATION_BINDINGS.USER_SERVICE) userService: UserService,
+    @inject(AUTHENTICATION_BINDINGS.BASIC_AUTH_OPTIONS) options?: BasicAuthOptions,
   ) {}
 
-  authenticate(request: Request): Promise<UserProfile | undefined> {
+  authenticate(request: Request, options: BasicAuthOptions): Promise<UserProfile | undefined> {
+    // override the global set options with the one passed from the caller
+    options = options || this.options;
     // extract the username and password from request
     const credentials = await this.extractCredentials(request);
     // `verifyCredentials` throws error accordingly: user doesn't exist OR invalid credentials
     const user = await userService.verifyCredentials(credentials);
     return await userService.convertToUserProfile(user);
-  }
-
-  setOptions(newOptions: object) {
-    Object.assign(options, newOptions);
   }
 
   extractCredentials(request): Promise<Credentials> {

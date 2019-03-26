@@ -5,7 +5,7 @@ the beginning of markdown file
 [authentication-system](./authentication-system.md).
 
 Please note how they are decorated with `@authenticate()`, the syntax is:
-`@authenticate(<strategy_name>, {action: <action_name>, session: <enabled_or_not>})`
+`@authenticate(strategy_name, options)`
 
 - /login
 
@@ -48,10 +48,16 @@ class LoginController{
     @inject(AuthenticationBindings.SERVICES.JWT_TOKEN) JWTtokenService: TokenService,
   ) {}
 
+  // I was about to create a local login example, while if the credentials are
+  // provided in the request body, all the authenticate logic will happen in the
+  // controller, the auth action isn't even involved.
+  // See the login endpoint in shopping example
+  // https://github.com/strongloop/loopback4-example-shopping/blob/master/src/controllers/user.controller.ts#L137
+
   // Describe the response using OpenAPI spec
-  @post('/loginOAI/local', RESPONSE_SPEC_FOR_JWT_LOGIN)
+  @post('/loginOAI/basicAuth', RESPONSE_SPEC_FOR_JWT_LOGIN)
   @authenticate('basicAuth')
-  localLoginReturningJWTToken() {
+  basicAuthLoginReturningJWTToken() {
     await token = JWTtokenService.generateToken(this.userProfile);
     // Action `send` will serialize token into response according to the OpenAPI spec.
     return token;
@@ -60,9 +66,9 @@ class LoginController{
   // OR
   // Serialize the token into response in the controller directly without describing it
   // with OpenAPI spec
-  @post('/loginWithoutOAI/local')
+  @post('/loginWithoutOAI/basicAuth')
   @authenticate('basicAuth')
-  localLoginReturningJWTToken() {
+  basicAuthLoginReturningJWTToken() {
     await token = JWTtokenService.generateToken(this.userProfile);
     // It's on users to serialize the token into the response.
     await writeTokenToResponse();
