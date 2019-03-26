@@ -74,7 +74,7 @@ Life cycle observers can be registered via a component too:
 
 ```ts
 export class MyComponentWithObservers {
-  lifeCycleObservers: [XObserver, YObserver];
+  lifeCycleObservers = [XObserver, YObserver];
 }
 ```
 
@@ -120,20 +120,23 @@ app
   .tag({
     [CoreTags.LIFE_CYCLE_OBSERVER_GROUP]: 'g1',
   })
-  .apply(asLifeCycleObserverBinding);
+  .apply(asLifeCycleObserver);
 ```
 
 The observer class can also be decorated with `@bind` to provide binding
 metadata.
 
 ```ts
+import {bind, createBindingFromClass} from '@loopback/context';
+import {CoreTags, asLifeCycleObserver} from '@loopback/core';
+
 @bind(
   {
     tags: {
       [CoreTags.LIFE_CYCLE_OBSERVER_GROUP]: 'g1',
     },
   },
-  asLifeCycleObserverBinding,
+  asLifeCycleObserver,
 )
 export class MyObserver {
   // ...
@@ -184,37 +187,8 @@ The sorted observer groups will be:
 }
 ```
 
-### Event phases
-
-It's also desirable for certain observers to do some processing before, upon, or
-after the `start` and `stop` events. To allow that, we notify each observer in
-three phases:
-
-- start: preStart, start, and postStart
-- stop: preStop, stop, and postStop
-
-Combining groups and event phases, it's flexible to manage multiple observers so
-that they can be started/stopped gracefully in order.
-
-For example, with a group order as `['datasource', 'server']` and three
-observers registered as follows:
-
-- datasource group: MySQLDataSource, MongoDBDataSource
-- server group: RestServer
-
-The start sequence will be:
-
-1. MySQLDataSource.preStart
-2. MongoDBDataSource.preStart
-3. RestServer.preStart
-
-4. MySQLDataSource.start
-5. MongoDBDataSource.start
-6. RestServer.start
-
-7. MySQLDataSource.postStart
-8. MongoDBDataSource.postStart
-9. RestServer.postStart
+The execution order of observers within the same group is not defined. If you
+want to have one to be invoked before the other, mark them with two groups.
 
 ## Add custom life cycle observers by convention
 
@@ -229,6 +203,16 @@ the application context as life cycle observers. This is achieved by a built-in
 
 To make it easy for application developers to add custom life cycle observers,
 we introduce `lb4 observer` command as part the CLI.
+
+```sh
+$ lb4 observer
+? Observer name: test
+? Observer group: g1
+   create src/observers/test.observer.ts
+   update src/observers/index.ts
+
+Observer test was created in src/observers/
+```
 
 See [Life cycle observer generator](Life-cycle-observer-generator.md) for more
 details.

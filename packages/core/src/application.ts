@@ -14,7 +14,7 @@ import * as debugFactory from 'debug';
 import {Component, mountComponent} from './component';
 import {CoreBindings, CoreTags} from './keys';
 import {
-  asLifeCycleObserverBinding,
+  asLifeCycleObserver,
   isLifeCycleObserverClass,
   LifeCycleObserver,
 } from './lifecycle';
@@ -96,7 +96,7 @@ export class Application extends Context implements LifeCycleObserver {
       namespace: CoreBindings.SERVERS,
       type: CoreTags.SERVER,
       defaultScope: BindingScope.SINGLETON,
-    }).apply(asLifeCycleObserverBinding);
+    }).apply(asLifeCycleObserver);
     this.add(binding);
     return binding;
   }
@@ -204,7 +204,7 @@ export class Application extends Context implements LifeCycleObserver {
       defaultScope: BindingScope.SINGLETON,
     });
     if (isLifeCycleObserverClass(componentCtor)) {
-      binding.apply(asLifeCycleObserverBinding);
+      binding.apply(asLifeCycleObserver);
     }
     this.add(binding);
     // Assuming components can be synchronously instantiated
@@ -238,7 +238,7 @@ export class Application extends Context implements LifeCycleObserver {
       namespace: CoreBindings.LIFE_CYCLE_OBSERVERS,
       type: CoreTags.LIFE_CYCLE_OBSERVER,
       defaultScope: BindingScope.SINGLETON,
-    }).apply(asLifeCycleObserverBinding);
+    }).apply(asLifeCycleObserver);
     this.add(binding);
     return binding;
   }

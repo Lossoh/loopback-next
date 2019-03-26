@@ -11,7 +11,7 @@ import {
 } from '@loopback/context';
 import {expect} from '@loopback/testlab';
 import {
-  asLifeCycleObserverBinding,
+  asLifeCycleObserver,
   CoreBindings,
   CoreTags,
   LifeCycleObserver,
@@ -91,7 +91,7 @@ describe('LifeCycleRegistry', () => {
     }
     const binding = createBindingFromClass(MyObserver, {
       key: `observers.observer-${name}`,
-    }).apply(asLifeCycleObserverBinding);
+    }).apply(asLifeCycleObserver);
     context.add(binding);
 
     return MyObserver;

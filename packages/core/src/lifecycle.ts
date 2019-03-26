@@ -51,7 +51,7 @@ export function isLifeCycleObserverClass(
  * Configure the binding as life cycle observer
  * @param binding Binding
  */
-export function asLifeCycleObserverBinding<T = unknown>(binding: Binding<T>) {
+export function asLifeCycleObserver<T = unknown>(binding: Binding<T>) {
   return binding.tag(CoreTags.LIFE_CYCLE_OBSERVER);
 }
 
